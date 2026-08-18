@@ -21,21 +21,34 @@ def list_pods_k8s() -> List[Dict]:
         })
     return pods
 
+def describe_deployment_k8s(name: str, namespace: str) -> Dict:
+    config.load_kube_config()
+    apps_v1 = client.AppsV1Api()
+    try:
+        dep = apps_v1.read_namespaced_deployment(name=name, namespace=namespace)
+    except ApiException as e:
+        return {"error": str(e), "status": e.status}
+
+    spec = dep.spec
+    status = dep.status
+    containers = spec.template.spec.containers if spec.template and spec.template.spec else []
+
+    return {
+        "name": dep.metadata.name,
+        "namespace": dep.metadata.namespace,
+        "desired_replicas": spec.replicas,
+        "available_replicas": status.available_replicas or 0,
+        "updated_replicas": status.updated_replicas or 0,
+        "ready_replicas": status.ready_replicas or 0,
+        "images": [c.image for c in containers],
+    }
+
 @mcp.tool()
 def get_pods() -> List[Dict]:
     return list_pods_k8s()
 @mcp.tool()
-def describe_deployment_k8s(name: str, namespace: str):
-    config.load_kube_config()
-    api_instance = client.AppsV1Api()
-    try:
-        deployment = api_instance.read_namespaced_deployment(
-            name=name, 
-            namespace=namespace
-        )
-        return deployment
-    except ApiException as e:
-        print(f"Exception when calling AppsV1Api->read_namespaced_deployment: {e}")
-        return None
+def describe_deployment(name: str, namespace: str):
+    return describe_deployment_k8s(name, namespace);
+        
 if __name__ == "__main__":
     mcp.run()
