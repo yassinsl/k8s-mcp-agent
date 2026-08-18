@@ -1,9 +1,9 @@
 from fastmcp import FastMCP
 from typing import List, Dict
 from kubernetes import client, config
+from kubernetes.client.exceptions import ApiException
 
 mcp = FastMCP(name="k8s-mcp-agent", instructions="get_pods")
-
 
 def list_pods_k8s() -> List[Dict]:
     config.load_kube_config()
@@ -21,10 +21,21 @@ def list_pods_k8s() -> List[Dict]:
         })
     return pods
 
-
 @mcp.tool()
 def get_pods() -> List[Dict]:
     return list_pods_k8s()
-
+@mcp.tool()
+def describe_deployment_k8s(name: str, namespace: str):
+    config.load_kube_config()
+    api_instance = client.AppsV1Api()
+    try:
+        deployment = api_instance.read_namespaced_deployment(
+            name=name, 
+            namespace=namespace
+        )
+        return deployment
+    except ApiException as e:
+        print(f"Exception when calling AppsV1Api->read_namespaced_deployment: {e}")
+        return None
 if __name__ == "__main__":
     mcp.run()
