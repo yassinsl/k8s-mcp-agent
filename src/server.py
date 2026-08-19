@@ -45,7 +45,22 @@ def describe_deployment_k8s(name: str, namespace: str) -> Dict:
         "ready_replicas": status.ready_replicas or 0,
         "images": [c.image for c in containers],
     }
+def tail_logs_k8s(pod_name: str, namespace: str, container: str | None = None, lines: int = 100) -> str:
+    config.load_kube_config()
+    v1 = client.CoreV1Api()
+    try:
+        if container is not None :
+            logs = v1.read_namespaced_pod_log(name=pod_name, namespace=namespace,container=container,tail_lines=lines)
+        else:
+            logs = v1.read_namespaced_pod_log(name=pod_name, namespace=namespace,tail_lines=lines)
+        return logs
+    except ApiException as e:
+            return f"error ({e.status}): {e.reason}"
 
+@mcp.tool()
+def get_logs(pod_name: str, namespace: str, container: str | None = None, lines: int = 100) -> str:
+    """Return recent log lines for a pod's container (or its only container if none is specified)."""
+    return tail_logs_k8s(pod_name, namespace, container, lines)
 @mcp.tool()
 def get_pods() -> List[Dict]:
     """List all pods across all namespaces, including their status, IP, and restart count."""
