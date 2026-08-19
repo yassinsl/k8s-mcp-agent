@@ -3,7 +3,10 @@ from typing import List, Dict
 from kubernetes import client, config
 from kubernetes.client.exceptions import ApiException
 
-mcp = FastMCP(name="k8s-mcp-agent", instructions="get_pods")
+mcp = FastMCP(
+    name="k8s-mcp-agent",
+    instructions="Tools for inspecting pod and deployment status in a Kubernetes cluster.",
+)
 
 def list_pods_k8s() -> List[Dict]:
     config.load_kube_config()
@@ -45,10 +48,12 @@ def describe_deployment_k8s(name: str, namespace: str) -> Dict:
 
 @mcp.tool()
 def get_pods() -> List[Dict]:
+    """List all pods across all namespaces, including their status, IP, and restart count."""
     return list_pods_k8s()
 @mcp.tool()
 def describe_deployment(name: str, namespace: str):
+    """Get a Deployment's desired vs actual replica counts, readiness, and container image."""
     return describe_deployment_k8s(name, namespace);
-        
+
 if __name__ == "__main__":
     mcp.run()
