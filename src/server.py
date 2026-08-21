@@ -71,4 +71,4 @@ def describe_deployment(name: str, namespace: str):
     return describe_deployment_k8s(name, namespace);
 
 if __name__ == "__main__":
-    mcp.run()
+    mcp.run(transport="http", port=8080)
